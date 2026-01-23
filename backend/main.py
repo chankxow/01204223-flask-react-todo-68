@@ -2,11 +2,29 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, String
-from sqlalchemy.orm import 
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase
 
 app = Flask(__name__)
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todos.db'
+
+class Base(DeclarativeBase):
+  pass
+
+db = SQLAlchemy(app, model_class=Base)
+
+class TodoItem(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(100))
+    done: Mapped[bool] = mapped_column(default=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "done": self.done
+        }
 
 todo_list = [
     { "id": 1,
