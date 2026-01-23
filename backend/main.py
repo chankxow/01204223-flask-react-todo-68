@@ -4,16 +4,18 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import DeclarativeBase
+from flask_migrate import Migrate       
 
 app = Flask(__name__)
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todos.db'
 
+
 class Base(DeclarativeBase):
   pass
 
 db = SQLAlchemy(app, model_class=Base)
-
+migrate = Migrate(app, db)        
 class TodoItem(db.Model):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -27,9 +29,8 @@ class TodoItem(db.Model):
             "done": self.done
         }
 
-with app.app_context():
-    db.create_all()
-    INITIAL_TODOS = [
+
+INITIAL_TODOS = [
     TodoItem(title='Learn Flask'),
     TodoItem(title='Build a Flask App'),
 ]
