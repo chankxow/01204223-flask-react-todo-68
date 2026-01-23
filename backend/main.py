@@ -15,6 +15,7 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(app, model_class=Base)
 
 class TodoItem(db.Model):
+    
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(100))
     done: Mapped[bool] = mapped_column(default=False)
@@ -25,6 +26,9 @@ class TodoItem(db.Model):
             "title": self.title,
             "done": self.done
         }
+
+with app.app_context():
+    db.create_all()
 
 todo_list = [
     { "id": 1,
