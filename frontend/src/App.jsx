@@ -6,7 +6,6 @@ import TodoItem from './TodoItem.jsx'
 
 function App() {
   const TODOLIST_API_URL = 'http://localhost:5000/api/todos/';
-  const [newComments, setNewComments] = useState({});
   const [todoList, setTodoList] = useState([]);
   const [newTitle, setNewTitle] = useState("");
 
@@ -42,7 +41,7 @@ function App() {
     }
   }
 
-  async function addNewComment(todoId) {
+  async function addNewComment(todoId, newComment) {
     try {
       const url = `${TODOLIST_API_URL}${todoId}/comments/`;
       const response = await fetch(url, {
@@ -50,10 +49,11 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 'message': newComments[todoId] || "" }),
+        // ใช้ค่า newComment จาก Parameter โดยตรง
+        body: JSON.stringify({ 'message': newComment }),
       });
       if (response.ok) {
-        setNewComments({ ...newComments, [todoId]: "" });
+        // ลบบรรทัดการ setNewComments เดิมออกตามคำแนะนำ
         await fetchTodoList();
       }
     } catch (error) {
@@ -104,8 +104,6 @@ function App() {
             todo={todo}
             toggleDone={toggleDone}
             deleteTodo={deleteTodo}
-            newComments={newComments}
-            setNewComments={setNewComments}
             addNewComment={addNewComment}
           />
         ))}

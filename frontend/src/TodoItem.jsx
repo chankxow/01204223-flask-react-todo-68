@@ -1,8 +1,11 @@
 import './App.css'
+import { useState } from 'react';
 
-function TodoItem({ todo, toggleDone, deleteTodo, newComments, setNewComments, addNewComment }) {
+function TodoItem({ todo, toggleDone, deleteTodo, addNewComment }) {
+  const [newComment, setNewComment] = useState("");
+
   return (
-    <li>
+    <li key={todo.id}>
       <span className={todo.done ? "done" : ""}>{todo.title}</span>
       <button onClick={() => toggleDone(todo.id)}>Toggle</button>
       <button onClick={() => deleteTodo(todo.id)}>❌</button>
@@ -22,13 +25,15 @@ function TodoItem({ todo, toggleDone, deleteTodo, newComments, setNewComments, a
         <input
           type="text"
           placeholder="Write a comment..."
-          value={newComments[todo.id] || ""}
-          onChange={(e) => {
-            const value = e.target.value;
-            setNewComments({ ...newComments, [todo.id]: value });
-          }}
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
         />
-        <button onClick={() => addNewComment(todo.id)}>Add Comment</button>
+        <button onClick={() => {
+          addNewComment(todo.id, newComment);
+          setNewComment("");
+        }}>
+          Add Comment
+        </button>
       </div>
     </li>
   );
