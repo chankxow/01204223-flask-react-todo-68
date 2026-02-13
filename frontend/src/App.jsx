@@ -94,22 +94,27 @@ function App() {
     }
   }
 
-  return (<>
-    <h1>Todo List</h1>
-    <ul>
-      {todoList.map(todo => (
-          <TodoItem 
-            key={todo.id} 
-            todo={todo} 
+  return (
+    <>
+      <h1>Todo List</h1>
+      <ul>
+
+        {todoList.map((todo) => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            toggleDone={toggleDone}
+            deleteTodo={deleteTodo}
+            newComments={newComments}
+            setNewComments={setNewComments}
+            addNewComment={addNewComment}
           />
         ))}
-    </ul>
-
-    <div className="add-todo-form">
+      </ul>
       New: <input type="text" value={newTitle} onChange={(e) => { setNewTitle(e.target.value) }} />
       <button onClick={() => { addNewTodo() }}>Add</button>
-    </div>
-  </>
+    </>
+
   )
 }
 

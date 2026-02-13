@@ -1,23 +1,37 @@
-import { useState } from 'react'
 import './App.css'
 
-function TodoItem({todo}) {
+function TodoItem({ todo, toggleDone, deleteTodo, newComments, setNewComments, addNewComment }) {
   return (
-    <li key={todo.id}>
+    <li>
       <span className={todo.done ? "done" : ""}>{todo.title}</span>
-      <button onClick={() => {toggleDone(todo.id)}}>Toggle</button>
-      <button onClick={() => {deleteTodo(todo.id)}}>❌</button>
-      {(todo.comments) && (todo.comments.length > 0) && (
+      <button onClick={() => toggleDone(todo.id)}>Toggle</button>
+      <button onClick={() => deleteTodo(todo.id)}>❌</button>
+
+      {todo.comments && todo.comments.length > 0 && (
         <>
-          // ละไว้
+          <br /><b>Comments:</b>
+          <ul>
+            {todo.comments.map((comment) => (
+              <li key={comment.id}>{comment.message}</li>
+            ))}
+          </ul>
         </>
       )}
+
       <div className="new-comment-forms">
-        // ละไว้
-        <button onClick={() => {addNewComment(todo.id)}}>Add Comment</button>
+        <input
+          type="text"
+          placeholder="Write a comment..."
+          value={newComments[todo.id] || ""}
+          onChange={(e) => {
+            const value = e.target.value;
+            setNewComments({ ...newComments, [todo.id]: value });
+          }}
+        />
+        <button onClick={() => addNewComment(todo.id)}>Add Comment</button>
       </div>
     </li>
-  )
+  );
 }
 
-export default TodoItem
+export default TodoItem;
