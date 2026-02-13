@@ -98,7 +98,6 @@ function App() {
     <>
       <h1>Todo List</h1>
       <ul>
-
         {todoList.map((todo) => (
           <TodoItem
             key={todo.id}

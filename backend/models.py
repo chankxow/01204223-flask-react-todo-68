@@ -8,14 +8,16 @@ class Base(DeclarativeBase):
   pass
 
 
-db = SQLAlchemy(model_class=Base)                   # แก้จาก db = SQLAlchemy(app, model_class=Base)
-
+db = SQLAlchemy(model_class=Base)                   
 class TodoItem(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(100))
     done: Mapped[bool] = mapped_column(default=False)
 
-    comments: Mapped[list["Comment"]] = relationship(back_populates="todo")
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="todo", 
+        cascade="all, delete-orphan"
+    )
 
     def to_dict(self):
         return {
