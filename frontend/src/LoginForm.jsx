@@ -1,0 +1,44 @@
+import { useState } from 'react'
+import './App.css'
+const [errorMessage, setErrorMessage] = useState("");
+
+function LoginForm({loginUrl}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+   async function handleLogin(e) {
+    e.preventDefault();
+    try {
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: username, password: password }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        alert("Login successful.  access token = " + data.access_token);
+      } else if (response.status === 401) {
+        setErrorMessage("Invalid username or password");
+      }
+    } catch (error) {
+      console.log("Error logging in:", error);
+    }
+  }
+
+  return (
+    <form onSubmit={(e) => {handleLogin(e)}}>
+      Username:
+      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+      <br/>
+      Password:
+      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <br/>
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+export default LoginForm;
