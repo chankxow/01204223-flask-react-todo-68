@@ -1,21 +1,39 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-//import { AuthProvider } from './context/AuthContext.jsx';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import LoginForm from './LoginForm.jsx';
 import './App.css'
-
 import TodoList from './Todolist.jsx'
 
-function App() {
-  const TODOLIST_API_URL = 'http://localhost:5000/api/login/';
+// Protected Route Component
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
 
+  if (loading) {
+    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function AppContent() {
   return (
     <BrowserRouter>
       <Routes>
         <Route 
           path="/" 
           element={
-            <TodoList apiUrl={TODOLIST_API_URL}/>
+            <ProtectedRoute>
+              <TodoList />
+            </ProtectedRoute>
           } 
+        />
+        <Route 
+          path="/login" 
+          element={<LoginForm />}
         />
         <Route 
           path="/about" 
@@ -27,20 +45,18 @@ function App() {
             </>
           } 
         />
-        <Route
-          path="/login"
-          element={
-            <LoginForm loginUrl={TODOLIST_API_URL} />
-          }
-        />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <br/>
-      <a href="/about">About</a>
-      <br/>
-      <a href="/login">Login</a> 
     </BrowserRouter>
-    
-  )
+  );
 }
 
-export default App
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+export default App;

@@ -1,116 +1,124 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import TodoItem from './TodoItem.jsx'
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
+import TodoItem from './TodoItem';
 
-function Todolist({apiUrl}) {
-  const TODOLIST_API_URL = apiUrl;
-  const [todoList, setTodoList] = useState([]);
-  const [newTitle, setNewTitle] = useState("");
+export default function TodoList() {
+  const { isAuthenticated, loading, logout, user } = useAuth();
+  const [todos, setTodos] = useState([]);
+  const [newTodo, setNewTodo] = useState('');
+  const [loadingTodos, setLoadingTodos] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchTodoList();
-  }, []);
-
-  async function fetchTodoList() {
-    try {
-      const response = await fetch(TODOLIST_API_URL);
-      if (!response.ok) {
-        throw new Error('Network error');
-      }
-      const data = await response.json();
-      setTodoList(data);
-    } catch (err) {
-      alert("Failed to fetch todo list from backend. Make sure the backend is running.");
+    if (!loading && !isAuthenticated) {
+      navigate('/login');
     }
-  }
+  }, [isAuthenticated, loading, navigate]);
 
-  async function toggleDone(id) {
-    const toggle_api_url = `${TODOLIST_API_URL}${id}/toggle/`
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTodos();
+    }
+  }, [isAuthenticated]);
+
+  const fetchTodos = async () => {
     try {
-      const response = await fetch(toggle_api_url, {
-        method: 'PATCH',
-      })
+      setLoadingTodos(true);
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5000/api/todos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (response.ok) {
-        const updatedTodo = await response.json();
-        setTodoList(todoList.map(todo => todo.id === id ? updatedTodo : todo));
+        const data = await response.json();
+        setTodos(data.todos);
+      } else if (response.status === 401) {
+        logout();
+        navigate('/login');
       }
     } catch (error) {
-      console.error("Error toggling todo:", error);
+      console.error('Failed to fetch todos:', error);
+    } finally {
+      setLoadingTodos(false);
     }
-  }
+  };
 
-  async function addNewComment(todoId, newComment) {
+  const addTodo = async (e) => {
+    e.preventDefault();
+    if (!newTodo.trim()) return;
+
     try {
-      const url = `${TODOLIST_API_URL}${todoId}/comments/`;
-      const response = await fetch(url, {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5000/api/todos', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        // ใช้ค่า newComment จาก Parameter โดยตรง
-        body: JSON.stringify({ 'message': newComment }),
+        body: JSON.stringify({ title: newTodo }),
       });
       if (response.ok) {
-        // ลบบรรทัดการ setNewComments เดิมออกตามคำแนะนำ
-        await fetchTodoList();
+        setNewTodo('');
+        fetchTodos();
       }
     } catch (error) {
-      console.error("Error adding new comment:", error);
+      console.error('Failed to add todo:', error);
     }
-  }
+  };
 
-  async function addNewTodo() {
-    try {
-      const response = await fetch(TODOLIST_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 'title': newTitle }),
-      });
-      if (response.ok) {
-        const newTodo = await response.json();
-        setTodoList([...todoList, newTodo]);
-        setNewTitle("");
-      }
-    } catch (error) {
-      console.error("Error adding new todo:", error);
-    }
-  }
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-  async function deleteTodo(id) {
-    const delete_api_url = `${TODOLIST_API_URL}${id}/`
-    try {
-      const response = await fetch(delete_api_url, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        setTodoList(todoList.filter(todo => todo.id !== id));
-      }
-    } catch (error) {
-      console.error("Error deleting todo:", error);
-    }
+  if (loading) {
+    return <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>;
   }
 
   return (
-    <>
-      <h1>Todo List</h1>
-      <ul>
-        {todoList.map((todo) => (
-          <TodoItem
-            key={todo.id}
-            todo={todo}
-            toggleDone={toggleDone}
-            deleteTodo={deleteTodo}
-            addNewComment={addNewComment}
-          />
-        ))}
-      </ul>
-      New: <input type="text" value={newTitle} onChange={(e) => { setNewTitle(e.target.value) }} />
-      <button onClick={() => { addNewTodo() }}>Add</button>
-    </>
+    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1>My Todos</h1>
+        <div>
+          <span style={{ marginRight: '15px', fontWeight: 'bold' }}>👤 {user?.email}</span>
+          <button 
+            onClick={handleLogout}
+            style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
 
-  )
+      <form onSubmit={addTodo} style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+        <input
+          type="text"
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="Add new todo..."
+          style={{ flex: 1, padding: '10px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ddd' }}
+        />
+        <button 
+          type="submit"
+          style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          Add
+        </button>
+      </form>
+
+      {loadingTodos ? (
+        <p style={{ textAlign: 'center', color: '#666' }}>Loading todos...</p>
+      ) : todos.length === 0 ? (
+        <p style={{ textAlign: 'center', color: '#999' }}>No todos yet. Add one to get started!</p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {todos.map((todo) => (
+            <TodoItem key={todo.id} todo={todo} onUpdate={fetchTodos} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
-
-export default Todolist;
