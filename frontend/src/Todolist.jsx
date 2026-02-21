@@ -47,24 +47,49 @@ export default function TodoList() {
 
   const addTodo = async (e) => {
     e.preventDefault();
-    if (!newTodo.trim()) return;
+
+    if (!newTodo.trim()) {
+      alert('Please enter a todo title');
+      return;
+    }
 
     try {
       const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        alert('No authentication token. Please login again.');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Sending todo:', { title: newTodo, token: token?.substring(0, 20) + '...' });
+
       const response = await fetch('http://localhost:5000/api/todos', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ title: newTodo }),
+        body: JSON.stringify({ title: newTodo })
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
       if (response.ok) {
         setNewTodo('');
         fetchTodos();
+      } else {
+        const errorMsg = responseData.error || responseData.message || JSON.stringify(responseData);
+        console.error('Error details:', errorMsg);
+        alert(`Failed to add todo: ${errorMsg}`);
       }
     } catch (error) {
-      console.error('Failed to add todo:', error);
+      console.error('Catch error:', error);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -82,7 +107,7 @@ export default function TodoList() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1>My Todos</h1>
         <div>
-          <span style={{ marginRight: '15px', fontWeight: 'bold' }}>👤 {user?.email}</span>
+          <span style={{ marginRight: '15px', fontWeight: 'bold' }}>👤 {user?.username}</span>
           <button 
             onClick={handleLogout}
             style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}

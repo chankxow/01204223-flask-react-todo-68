@@ -4,7 +4,7 @@ import { useAuth } from './context/AuthContext';
 import './App.css';
 
 export default function LoginForm() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,8 +18,8 @@ export default function LoginForm() {
     setError('');
 
     const result = isRegister
-      ? await register(email, password)
-      : await login(email, password);
+      ? await register(username, password)
+      : await login(username, password);
 
     if (result.success) {
       navigate('/');
@@ -35,11 +35,11 @@ export default function LoginForm() {
       {error && <div style={{ color: 'red', marginBottom: '10px', padding: '10px', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '15px' }}>
-          <label>Email:</label>
+          <label>Username:</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }}
           />

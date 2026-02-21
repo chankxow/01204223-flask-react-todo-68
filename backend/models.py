@@ -10,7 +10,7 @@ class User(db.Model):
     __tablename__ = 'user'
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
@@ -28,7 +28,7 @@ class User(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'email': self.email,
+            'username': self.username,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

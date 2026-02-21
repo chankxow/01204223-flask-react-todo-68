@@ -128,8 +128,8 @@ function TodoItem({ todo, onUpdate }) {
           <p style={{ margin: '10px 0 5px 0', fontWeight: 'bold' }}>Comments ({todo.comments.length}):</p>
           <ul style={{ listStyle: 'none', padding: '0 0 0 20px', marginBottom: '10px' }}>
             {todo.comments.map((comment) => (
-              <li key={comment.id} style={{ marginBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>{comment.message}</span>
+              <li key={comment.id} style={{ marginBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', backgroundColor: '#e8f5e9', borderRadius: '4px', borderLeft: '4px solid #4caf50' }}>
+                <span style={{ color: '#1b5e20', fontWeight: '500' }}>{comment.message}</span>
                 <button
                   onClick={() => deleteComment(comment.id)}
                   style={{ fontSize: '12px', padding: '2px 5px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '2px', cursor: 'pointer' }}

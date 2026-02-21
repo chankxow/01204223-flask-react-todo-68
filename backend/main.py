@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -20,7 +21,7 @@ db.init_app(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]}}, supports_credentials=True)
 
 
 # ================================
@@ -31,24 +32,32 @@ CORS(app)
 def register():
     """Register a new user"""
     data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+    if not data:
+        return jsonify({'message': 'Invalid JSON'}), 400
+        
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
 
-    if not email or not password:
-        return jsonify({'message': 'Email and password required'}), 400
+    if not username or not password:
+        return jsonify({'message': 'Username and password required'}), 400
+        
+    if len(password) < 6:
+        return jsonify({'message': 'Password must be at least 6 characters long'}), 400
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({'message': 'Email already registered'}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({'message': 'Username already exists'}), 409
 
-    user = User(email=email)
+    user = User(username=username)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
 
-    token = create_access_token(identity=user.id)
+    expires = timedelta(days=7)
+    access_token = create_access_token(identity=str(user.id), expires_delta=expires)
+    
     return jsonify({
         'message': 'User registered successfully',
-        'token': token,
+        'token': access_token,
         'user': user.to_dict()
     }), 201
 
@@ -57,19 +66,22 @@ def register():
 def login():
     """Login user"""
     data = request.get_json()
-    email = data.get('email')
+    username = data.get('username')
     password = data.get('password')
 
-    if not email or not password:
-        return jsonify({'message': 'Email and password required'}), 400
+    if not username or not password:
+        return jsonify({'message': 'Username and password required'}), 400
 
-    user = User.query.filter_by(email=email).first()
+    user = User.query.filter_by(username=username).first()
+    
     if not user or not user.check_password(password):
-        return jsonify({'message': 'Invalid email or password'}), 401
+        return jsonify({'message': 'Invalid username or password'}), 401
 
-    token = create_access_token(identity=user.id)
+    expires = timedelta(days=7)
+    access_token = create_access_token(identity=str(user.id), expires_delta=expires)
+    
     return jsonify({
-        'token': token,
+        'token': access_token,
         'user': user.to_dict()
     }), 200
 
@@ -78,7 +90,7 @@ def login():
 @jwt_required()
 def verify():
     """Verify current token and get user info"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user:
@@ -95,7 +107,7 @@ def verify():
 @jwt_required()
 def get_todos():
     """Get all todos for current user"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todos = TodoItem.query.filter_by(user_id=user_id).order_by(TodoItem.created_at.desc()).all()
     return jsonify({'todos': [todo.to_dict() for todo in todos]}), 200
 
@@ -104,25 +116,33 @@ def get_todos():
 @jwt_required()
 def add_todo():
     """Create a new todo"""
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    title = data.get('title')
+    try:
+        user_id = int(get_jwt_identity())
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Invalid JSON'}), 400
+            
+        title = data.get('title', '').strip()
 
-    if not title:
-        return jsonify({'error': 'Title is required'}), 400
+        if not title:
+            return jsonify({'error': 'Title is required'}), 400
 
-    todo = TodoItem(title=title, user_id=user_id)
-    db.session.add(todo)
-    db.session.commit()
+        todo = TodoItem(title=title, user_id=user_id)
+        db.session.add(todo)
+        db.session.commit()
 
-    return jsonify(todo.to_dict()), 201
+        return jsonify(todo.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in add_todo: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 
 @app.route('/api/todos/<int:todo_id>', methods=['GET'])
 @jwt_required()
 def get_todo(todo_id):
     """Get a specific todo"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todo = TodoItem.query.filter_by(id=todo_id, user_id=user_id).first()
     
     if not todo:
@@ -135,13 +155,16 @@ def get_todo(todo_id):
 @jwt_required()
 def update_todo(todo_id):
     """Update a todo"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todo = TodoItem.query.filter_by(id=todo_id, user_id=user_id).first()
 
     if not todo:
         return jsonify({'message': 'Todo not found'}), 404
 
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON'}), 400
+        
     if 'title' in data:
         todo.title = data['title']
     if 'done' in data:
@@ -155,7 +178,7 @@ def update_todo(todo_id):
 @jwt_required()
 def toggle_todo(todo_id):
     """Toggle todo completion status"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todo = TodoItem.query.filter_by(id=todo_id, user_id=user_id).first()
 
     if not todo:
@@ -170,7 +193,7 @@ def toggle_todo(todo_id):
 @jwt_required()
 def delete_todo(todo_id):
     """Delete a todo"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todo = TodoItem.query.filter_by(id=todo_id, user_id=user_id).first()
 
     if not todo:
@@ -189,7 +212,7 @@ def delete_todo(todo_id):
 @jwt_required()
 def add_comment(todo_id):
     """Add a comment to a todo"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todo = TodoItem.query.filter_by(id=todo_id, user_id=user_id).first()
 
     if not todo:
@@ -199,8 +222,12 @@ def add_comment(todo_id):
     if not data or 'message' not in data:
         return jsonify({'error': 'Comment message is required'}), 400
 
+    message = data['message'].strip()
+    if not message:
+        return jsonify({'error': 'Comment message cannot be empty'}), 400
+
     comment = Comment(
-        message=data['message'],
+        message=message,
         todo_id=todo_id
     )
     db.session.add(comment)
@@ -213,7 +240,7 @@ def add_comment(todo_id):
 @jwt_required()
 def delete_comment(todo_id, comment_id):
     """Delete a comment"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     todo = TodoItem.query.filter_by(id=todo_id, user_id=user_id).first()
 
     if not todo:
@@ -233,19 +260,18 @@ def delete_comment(todo_id, comment_id):
 # ================================
 
 @app.cli.command("create-user")
-@click.argument("email")
+@click.argument("username")
 @click.argument("password")
-def create_user(email, password):
-    """Create a new user from CLI"""
-    if User.query.filter_by(email=email).first():
-        click.echo(f"Error: User with email {email} already exists")
+def create_user(username, password):
+    if User.query.filter_by(username=username).first():
+        click.echo(f"Error: User with username {username} already exists")
         return
 
-    user = User(email=email)
+    user = User(username=username)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
-    click.echo(f"User {email} created successfully")
+    click.echo(f"User {username} created successfully")
 
 
 @app.cli.command("init-db")
