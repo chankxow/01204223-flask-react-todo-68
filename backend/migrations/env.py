@@ -1,5 +1,10 @@
 import logging
 from logging.config import fileConfig
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from flask import current_app
 
@@ -8,6 +13,9 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Set the database URL from environment variable
+config.set_main_option('sqlalchemy.url', os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///todos.db'))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

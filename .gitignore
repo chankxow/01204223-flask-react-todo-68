@@ -1,2 +1,6 @@
 .vscode/
 .windsurfrules
+.env
+5
+5.pub*.db
+backend/todo.db
