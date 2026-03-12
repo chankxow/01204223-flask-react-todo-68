@@ -13,4 +13,4 @@ services:
       - key: JWT_SECRET_KEY
         value: dev-secret-key-not-for-production-use
       - key: PRODUCTION_URL
-        value: https://your-username.github.io/todo-app
+        value: https://chankxow.github.io/01204223-flask-react-todo-68

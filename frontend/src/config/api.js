@@ -4,8 +4,8 @@ const isProduction = !isDevelopment;
 
 // Determine API base URL based on environment
 export const API_BASE_URL = isDevelopment 
-  ? 'http://localhost:5001/todo-app-ku-3755/us-central1/api'
-  : '/api';
+  ? 'http://localhost:5000'
+  : 'https://todo-api.onrender.com';
 
 // Helper function for API calls
 export const apiRequest = async (endpoint, options = {}) => {
