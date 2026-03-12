@@ -5,7 +5,7 @@ const isProduction = !isDevelopment;
 // Determine API base URL based on environment
 export const API_BASE_URL = isDevelopment 
   ? 'http://localhost:5000'
-  : 'https://todo-api.onrender.com';
+  : (import.meta.env.VITE_API_BASE_URL || 'https://todo-api.onrender.com');
 
 // Helper function for API calls
 export const apiRequest = async (endpoint, options = {}) => {
