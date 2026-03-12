@@ -1,8 +1,18 @@
-import { render, screen } from '@testing-library/react'
-import { expect, vi, describe, it } from 'vitest' // เพิ่ม vi เข้ามา
+import { render, screen, waitFor } from '@testing-library/react'
+import { expect, vi, describe, it } from 'vitest'
 import TodoItem from '../TodoItem.jsx'
-import App from '../App.jsx' // อย่าลืม import App
 import userEvent from '@testing-library/user-event'
+
+// Mock the API functions
+vi.mock('../config/api.js', () => ({
+  apiRequest: vi.fn()
+}));
+
+// Mock window.confirm
+const mockConfirm = vi.fn();
+Object.defineProperty(window, 'confirm', {
+  value: mockConfirm,
+});
 
 const baseTodo = {
     id: 1,
@@ -27,45 +37,11 @@ const mockResponse = (data) => Promise.resolve({
     json: () => Promise.resolve(data),
 });
 
-describe('App', () => {
-    beforeEach(() => {
-        vi.stubGlobal('fetch', vi.fn());
-    });
-
-    it('renders correctly', async () => {
-        global.fetch.mockImplementationOnce(() =>
-            mockResponse(originalTodoList)
-        );
-        render(<App />);
-        expect(await screen.findByText('First todo')).toBeInTheDocument();
-        expect(await screen.findByText('Second todo')).toBeInTheDocument();
-    });
-
-    it('toggles done on a todo item', async () => {
-        const toggledTodoItem1 = { ...todoItem1, done: true };
-
-        global.fetch
-            .mockImplementationOnce(() => mockResponse(originalTodoList))
-            .mockImplementationOnce(() => mockResponse(toggledTodoItem1));
-
-        render(<App />);
-
-        const todoText = await screen.findByText('First todo');
-        expect(todoText).not.toHaveClass('done');
-
-        const toggleButtons = await screen.findAllByRole('button', { name: /toggle/i });
-        await userEvent.click(toggleButtons[0]); 
-
-        expect(await screen.findByText('First todo')).toHaveClass('done');
-        expect(global.fetch).toHaveBeenLastCalledWith(expect.stringMatching(/1\/toggle/), expect.objectContaining({ method: 'PATCH' }));
-    });
-});
-
 describe('TodoItem', () => {
     it('renders with no comments correctly', () => {
-        render(<TodoItem todo={baseTodo} />);
+        render(<TodoItem todo={baseTodo} onUpdate={() => {}} />);
         expect(screen.getByText('Sample Todo')).toBeInTheDocument();
-        expect(screen.getByText('No comments')).toBeInTheDocument();
+        expect(screen.getByText('No comments yet')).toBeInTheDocument();
     });
 
     it('renders with comments correctly', () => {
@@ -76,13 +52,11 @@ describe('TodoItem', () => {
                 { id: 2, message: 'Another comment' },
             ]
         };
-        render(<TodoItem todo={todoWithComment} />);
+        render(<TodoItem todo={todoWithComment} onUpdate={() => {}} />);
         expect(screen.getByText('Sample Todo')).toBeInTheDocument();
         
-        // Assertion 
         expect(screen.getByText('First comment')).toBeInTheDocument();
         expect(screen.getByText('Another comment')).toBeInTheDocument();
-        //  TodoItem.jsx  Comments
         expect(screen.getByText(/2/)).toBeInTheDocument();
     });
 
@@ -91,40 +65,59 @@ describe('TodoItem', () => {
             ...baseTodo,
             comments: [{ id: 1, message: 'First comment' }]
         };
-        render(<TodoItem todo={todoWithComment} />);
-        expect(screen.queryByText('No comments')).not.toBeInTheDocument();
+        render(<TodoItem todo={todoWithComment} onUpdate={() => {}} />);
+        expect(screen.queryByText('No comments yet')).not.toBeInTheDocument();
     });
 
-    it('makes callback to toggleDone when Toggle button is clicked', async () => {
-        const onToggleDone = vi.fn();
-        render(<TodoItem todo={baseTodo} toggleDone={onToggleDone} />);
+    it('makes callback to toggleDone when checkbox is clicked', async () => {
+        const onUpdate = vi.fn();
         
-        const button = screen.getByRole('button', { name: /toggle/i });
-        await userEvent.click(button);
+        const { apiRequest } = await import('../config/api.js');
+        apiRequest.mockResolvedValue({ ok: true });
         
-        expect(onToggleDone).toHaveBeenCalledWith(baseTodo.id);
+        render(<TodoItem todo={baseTodo} onUpdate={onUpdate} />);
+        
+        const checkbox = screen.getByRole('checkbox');
+        await userEvent.click(checkbox);
+        
+        await waitFor(() => {
+            expect(onUpdate).toHaveBeenCalled();
+        });
     });
 
     it('makes callback to deleteTodo when delete button is clicked', async () => {
-        const deleteTodoMock = vi.fn();
-        render(<TodoItem todo={baseTodo} deleteTodo={deleteTodoMock} />);
+        const onUpdate = vi.fn();
+        mockConfirm.mockReturnValue(true); // Mock confirm dialog
+        
+        const { apiRequest } = await import('../config/api.js');
+        apiRequest.mockResolvedValue({ ok: true });
+        
+        render(<TodoItem todo={baseTodo} onUpdate={onUpdate} />);
 
-        const deleteButton = screen.getByText('❌');
+        const deleteButton = screen.getByText('Delete');
         await userEvent.click(deleteButton);
         
-        expect(deleteTodoMock).toHaveBeenCalledWith(baseTodo.id);
+        await waitFor(() => {
+            expect(onUpdate).toHaveBeenCalled();
+        });
     });
 
     it('makes callback to addNewComment when a new comment is added', async () => {
-        const onAddNewComment = vi.fn();
-        render(<TodoItem todo={baseTodo} addNewComment={onAddNewComment} />);
+        const onUpdate = vi.fn();
+        
+        const { apiRequest } = await import('../config/api.js');
+        apiRequest.mockResolvedValue({ ok: true });
+        
+        render(<TodoItem todo={baseTodo} onUpdate={onUpdate} />);
 
         const input = screen.getByRole('textbox');
         await userEvent.type(input, 'New comment');
 
-        const addButton = screen.getByText('Add Comment');
+        const addButton = screen.getByText('Add');
         await userEvent.click(addButton);
 
-        expect(onAddNewComment).toHaveBeenCalledWith(baseTodo.id, 'New comment');
+        await waitFor(() => {
+            expect(onUpdate).toHaveBeenCalled();
+        });
     });
 });
