@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: todo-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SQLALCHEMY_DATABASE_URI
+        value: sqlite:///todo.db
+      - key: JWT_SECRET_KEY
+        value: change-this-secret-key-in-production
+      - key: PRODUCTION_URL
+        value: https://your-username.github.io/todo-app

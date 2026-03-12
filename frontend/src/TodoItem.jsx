@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import { apiRequest } from './config/api.js';
 
 function TodoItem({ todo, onUpdate }) {
   const [newComment, setNewComment] = useState("");
@@ -7,13 +8,8 @@ function TodoItem({ todo, onUpdate }) {
 
   const toggleTodo = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5000/api/todos/${todo.id}`, {
+      const response = await apiRequest(`/todos/${todo.id}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ done: !todo.done }),
       });
       if (response.ok) {
@@ -27,12 +23,8 @@ function TodoItem({ todo, onUpdate }) {
   const deleteTodo = async () => {
     if (window.confirm('Are you sure you want to delete this todo?')) {
       try {
-        const token = localStorage.getItem('authToken');
-        const response = await fetch(`http://localhost:5000/api/todos/${todo.id}`, {
+        const response = await apiRequest(`/todos/${todo.id}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
         });
         if (response.ok) {
           onUpdate();
@@ -49,13 +41,8 @@ function TodoItem({ todo, onUpdate }) {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5000/api/todos/${todo.id}/comments`, {
+      const response = await apiRequest(`/todos/${todo.id}/comments`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ message: newComment }),
       });
       if (response.ok) {
@@ -71,12 +58,8 @@ function TodoItem({ todo, onUpdate }) {
 
   const deleteComment = async (commentId) => {
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:5000/api/todos/${todo.id}/comments/${commentId}`, {
+      const response = await apiRequest(`/todos/${todo.id}/comments/${commentId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
       if (response.ok) {
         onUpdate();

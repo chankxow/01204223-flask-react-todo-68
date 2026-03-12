@@ -8,6 +8,10 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 from flask_jwt_extended import JWTManager
 import click
 from dotenv import load_dotenv
+import pymysql
+
+# Make PyMySQL work as MySQLdb for SQLAlchemy
+pymysql.install_as_MySQLdb()
 
 # Load environment variables
 load_dotenv()
@@ -16,16 +20,38 @@ app = Flask(__name__)
 
 # Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///' + os.path.join(basedir, 'todo.db'))
+
+# Try to load local config first (for deployment)
+try:
+    from local_config import CONFIG_DB_URI, CONFIG_JWT_SECRET
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', CONFIG_DB_URI)
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', CONFIG_JWT_SECRET)
+except ImportError:
+    # Fallback to environment variables or defaults
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///' + os.path.join(basedir, 'todo.db'))
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'change-this-secret-key-in-production')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'fdslkfjsdlkufewhjroiewurewrew')
 
 # Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]}}, supports_credentials=True)
+# CORS Configuration - Allow production origins
+allowed_origins = [
+    "http://localhost:5173", 
+    "http://localhost:3000", 
+    "http://127.0.0.1:5173", 
+    "http://127.0.0.1:3000"
+]
+
+# Add production URL if available
+production_url = os.getenv('PRODUCTION_URL')
+if production_url:
+    allowed_origins.append(production_url)
+
+CORS(app, resources={r"/api/*": {"origins": allowed_origins}}, supports_credentials=True)
 
 
 # ================================
@@ -299,7 +325,49 @@ def internal_error(error):
     return jsonify({'message': 'Internal server error'}), 500
 
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True, port=5000)
+# Serve React static files
+import os
+from flask import send_from_directory, send_file
+
+# Check if we're in production (React build exists)
+react_build_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'build')
+
+@app.route('/api/health')
+def health_check():
+    """Health check endpoint for load balancers"""
+    return jsonify({'status': 'healthy', 'service': 'todo-api'}), 200
+
+@app.route('/static/<path:filename>')
+def serve_static_files(filename):
+    """Serve static files from React build"""
+    if os.path.exists(react_build_path):
+        return send_from_directory(os.path.join(react_build_path, 'static'), filename)
+    else:
+        return jsonify({'error': 'Static files not found'}), 404
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    """Serve React app for all non-API routes"""
+    # Don't serve React app for API routes
+    if path.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    if os.path.exists(react_build_path):
+        # Try to serve the requested file first
+        file_path = os.path.join(react_build_path, path)
+        if path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return send_from_directory(react_build_path, path)
+        else:
+            # Serve index.html for all other routes (React Router)
+            return send_from_directory(react_build_path, 'index.html')
+    else:
+        return jsonify({
+            'message': 'React build not found. Please build the frontend first.',
+            'build_path': react_build_path
+        }), 404
+
+
+# Run app for Cloud Run
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

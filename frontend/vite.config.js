@@ -4,6 +4,26 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
+  },
+  build: {
+    outDir: 'build',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom']
+        }
+      }
+    }
+  },
   // ** เพิ่มส่วนด้านล่างนี้ **
   test: {
     globals: true,                          // ทำให้เรียกฟังก์ชันเกี่ยวกับการเทสได้โดยไม่ต้องประกาศ

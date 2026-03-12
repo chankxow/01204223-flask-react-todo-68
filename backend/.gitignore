@@ -5,3 +5,4 @@ __pycache__
 .windsurfrules
 .gitignore.env
 .env*.db
+local_config.py

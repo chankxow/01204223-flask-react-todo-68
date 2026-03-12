@@ -1,0 +1,21 @@
+# Production Configuration
+# This file contains production settings for deployment
+# Copy this file to local_config.py and update the values
+
+import os
+
+# Database Configuration for Production (MySQL/Cloud SQL)
+CONFIG_DB_URI = os.getenv(
+    'SQLALCHEMY_DATABASE_URI', 
+    'mysql+pymysql://username:password@localhost/dbname'
+)
+
+# JWT Secret Key for Production
+CONFIG_JWT_SECRET = os.getenv(
+    'JWT_SECRET_KEY', 
+    'your-production-jwt-secret-key-change-this'
+)
+
+# Additional production settings can be added here
+# For example:
+# CONFIG_CLOUD_SQL_INSTANCE = os.getenv('CLOUD_SQL_INSTANCE', 'your-project:region:instance-name')

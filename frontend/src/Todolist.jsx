@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { apiRequest } from './config/api.js';
 import TodoItem from './TodoItem';
 
 export default function TodoList() {
@@ -25,12 +26,7 @@ export default function TodoList() {
   const fetchTodos = async () => {
     try {
       setLoadingTodos(true);
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:5000/api/todos', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await apiRequest('/todos');
       if (response.ok) {
         const data = await response.json();
         setTodos(data.todos);
@@ -54,27 +50,14 @@ export default function TodoList() {
     }
 
     try {
-      const token = localStorage.getItem('authToken');
-      
-      if (!token) {
-        alert('No authentication token. Please login again.');
-        navigate('/login');
-        return;
-      }
+      console.log('Sending todo:', { title: newTodo });
 
-      console.log('Sending todo:', { title: newTodo, token: token?.substring(0, 20) + '...' });
-
-      const response = await fetch('http://localhost:5000/api/todos', {
+      const response = await apiRequest('/todos', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ title: newTodo })
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
 
       const responseData = await response.json();
       console.log('Response data:', responseData);
