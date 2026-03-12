@@ -1,11 +1,39 @@
 import { render, screen } from '@testing-library/react'
 import { vi } from 'vitest'
-import App from '../App.jsx'
+import { MemoryRouter } from 'react-router-dom'
+import LoginForm from '../LoginForm.jsx'
 
-// Skip App tests temporarily due to complex React Router mocking
-// TodoItem tests are passing and cover core functionality
-describe.skip('App', () => {
-  it('placeholder test', () => {
-    expect(true).toBe(true);
+// Mock the API functions
+vi.mock('../config/api.js', () => ({
+  apiRequest: vi.fn()
+}));
+
+// Mock AuthContext
+vi.mock('../context/AuthContext.jsx', () => ({
+  useAuth: () => ({
+    login: vi.fn(),
+    register: vi.fn()
+  })
+}));
+
+describe('App Components', () => {
+  it('renders login form', () => {
+    render(
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument();
+  });
+
+  it('login form has required fields', () => {
+    render(
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue('').length).toBe(2);
+    expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
   });
 });

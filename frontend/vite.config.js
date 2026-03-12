@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: '/01204223-flask-react-todo-68/',
   server: {
     proxy: {
       '/api': {
