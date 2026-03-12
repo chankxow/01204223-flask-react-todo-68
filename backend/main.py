@@ -29,7 +29,7 @@ try:
 except ImportError:
     # Fallback to environment variables or defaults
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI', 'sqlite:///' + os.path.join(basedir, 'todo.db'))
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'change-this-secret-key-in-production')
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret-key-not-for-production-use')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

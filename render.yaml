@@ -11,6 +11,6 @@ services:
       - key: SQLALCHEMY_DATABASE_URI
         value: sqlite:///todo.db
       - key: JWT_SECRET_KEY
-        value: change-this-secret-key-in-production
+        value: dev-secret-key-not-for-production-use
       - key: PRODUCTION_URL
         value: https://your-username.github.io/todo-app
