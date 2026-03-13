@@ -3,8 +3,8 @@ services:
     name: todo-api
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    buildCommand: pip install -r requirements.txt && pip install gunicorn && flask db upgrade
+    startCommand: gunicorn main:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PORT
         value: 8080
@@ -14,3 +14,5 @@ services:
         value: dev-secret-key-not-for-production-use
       - key: PRODUCTION_URL
         value: https://chankxow.github.io/01204223-flask-react-todo-68
+      - key: SQLALCHEMY_DATABASE_URI
+        sync: false   # ← บอก Render ว่าค่านี้ให้กรอกใน dashboard เอง
