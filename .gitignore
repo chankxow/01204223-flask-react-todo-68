@@ -6,3 +6,4 @@
 5.pub
 todo.db
 .gitignore
+local_config.py
